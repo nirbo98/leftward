@@ -2,6 +2,7 @@
  * Descriptive progress summaries. Counts with denominators only — no scores,
  * percentages of "improvement", norms, or clinical interpretation.
  */
+import { cueSpatiality } from './observation';
 import type { CueType, DeviceClass, ExerciseId, Readiness, ResponseClass, SessionRecord, TrialRecord } from './types';
 
 export interface ClassCounts {
@@ -52,6 +53,15 @@ export interface ProgressSummary {
   byFirstCue: Partial<Record<CueType, { trials: number; orientedAfter: number; interpretable: number }>>;
   fatigueFlagged: number;
   smallSample: boolean;
+  /**
+   * Alert-then-target exercise, descriptive only: trials with ONLY pre-target non-spatial alerts
+   * vs trials with no cue at all. Trials with any cue after the target are excluded ("mixed").
+   */
+  alertComparison: {
+    withAlert: { trials: number; interpretable: number; oriented: number };
+    withoutAlert: { trials: number; interpretable: number; oriented: number };
+    excludedMixed: number;
+  };
 }
 
 export const SMALL_SAMPLE = 20;
@@ -83,7 +93,24 @@ export function summarize(sessions: readonly SessionRecord[], trials: readonly T
       if (t.responseClass === 'after_spatial_cue' || t.responseClass === 'after_nonspatial_cue') e.orientedAfter++;
     }
   }
+  const alertComparison: ProgressSummary['alertComparison'] = {
+    withAlert: { trials: 0, interpretable: 0, oriented: 0 },
+    withoutAlert: { trials: 0, interpretable: 0, oriented: 0 },
+    excludedMixed: 0,
+  };
+  for (const t of trials.filter((x) => x.exercise === 'alert_then_target')) {
+    const pure = t.cues.every((c) => c.preTarget && cueSpatiality(c.type) === 'nonspatial');
+    if (!pure) {
+      alertComparison.excludedMixed++;
+      continue;
+    }
+    const bucket = t.cues.length > 0 ? alertComparison.withAlert : alertComparison.withoutAlert;
+    bucket.trials++;
+    if (t.responseClass !== 'cannot_determine') bucket.interpretable++;
+    if (t.responseClass === 'spontaneous' || t.responseClass === 'after_nonspatial_cue') bucket.oriented++;
+  }
   return {
+    alertComparison,
     sessionCount: sessions.length,
     trialCount: trials.length,
     leftTargets: countClasses(trials.filter((t) => t.targetSide === 'left')),

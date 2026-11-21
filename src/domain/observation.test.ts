@@ -45,3 +45,10 @@ describe('observation classification & cue provenance (acceptance 3, 4)', () => 
     expect(head.outcome.kind === 'oriented' && head.outcome.modality).toBe('head');
   });
 });
+
+describe('alerting cues', () => {
+  it('"שים לב" and tones are non-spatial', () => {
+    expect(cueSpatiality('verbal_alert')).toBe('nonspatial');
+    expect(classifyObservation([cue('verbal_alert')], obs(ORIENT_EYES))).toBe('after_nonspatial_cue');
+  });
+});

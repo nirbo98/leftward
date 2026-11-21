@@ -134,7 +134,7 @@ test('slow pursuit moves only with approval, freezes on pause, and is disabled b
   await page.goto('/#/settings');
   await page.getByTestId('section-advanced').locator('summary').click();
   await page.getByTestId('advanced-mode').check();
-  await page.getByText('צוות השיקום אישר תרגול עם מטרה שנעה לאט').click();
+  await page.getByText('צוות השיקום אישר תרגול עם חפצים שנעים לאט').click();
   await page.goto('/#/start');
   await page.getByTestId('readiness-alert').click();
   await page.getByTestId('vision-noticed').click();
@@ -159,7 +159,7 @@ test('slow pursuit moves only with approval, freezes on pause, and is disabled b
   await p2.goto(page.url().replace(/#.*$/, '#/settings'));
   await p2.getByTestId('section-advanced').locator('summary').click();
   await p2.getByTestId('advanced-mode').check();
-  await p2.getByText('צוות השיקום אישר תרגול עם מטרה שנעה לאט').click();
+  await p2.getByText('צוות השיקום אישר תרגול עם חפצים שנעים לאט').click();
   await p2.goto(page.url().replace(/#.*$/, '#/start'));
   await p2.getByTestId('readiness-alert').click();
   await p2.getByTestId('vision-noticed').click();
@@ -169,9 +169,12 @@ test('slow pursuit moves only with approval, freezes on pause, and is disabled b
   await ctx.close();
 });
 
-test('all five exercises run a real loop with the same observation interface', async ({ page }) => {
+test('all seven exercises run a real loop with the same observation interface', async ({ page }) => {
+  await page.goto('/#/settings');
+  await page.getByTestId('section-advanced').locator('summary').click();
+  await page.getByText('צוות השיקום אישר תרגול עם חפצים שנעים לאט').click();
   await page.goto('/');
-  for (const id of ['guided_orienting', 'visual_scanning', 'target_search', 'saccadic_exploration', 'focus_initiation']) {
+  for (const id of ['guided_orienting', 'visual_scanning', 'target_search', 'saccadic_exploration', 'focus_initiation', 'alert_then_target', 'leftward_pursuit']) {
     await page.goto('/#/start');
     await page.getByTestId('readiness-alert').click();
     await page.getByTestId('vision-skipped').click();
@@ -179,7 +182,17 @@ test('all five exercises run a real loop with the same observation interface', a
     await page.getByTestId(`choose-${id}`).click();
     for (let i = 0; i < 2; i++) {
       await page.getByTestId('show-target').click();
+      if (id === 'alert_then_target') {
+        await expect(page.getByTestId('stim-target')).toHaveCount(0);
+        if (i === 0) await page.getByTestId('alert-verbal').click();
+        await page.getByTestId('reveal-target').click();
+      }
       await expect(page.getByTestId('stim-target')).toBeVisible();
+      if (id === 'leftward_pursuit') {
+        const x0 = Number(await page.getByTestId('stim-target').getAttribute('data-physical-x'));
+        await page.waitForTimeout(800);
+        expect(Number(await page.getByTestId('stim-target').getAttribute('data-physical-x'))).toBeLessThan(x0);
+      }
       await page.getByTestId('record').click();
       await expect(page.getByTestId('observation-panel')).toBeVisible();
       await page.getByTestId('obs-eyes').click();
@@ -190,7 +203,7 @@ test('all five exercises run a real loop with the same observation interface', a
     await page.getByTestId('finish-session').click();
     await expect(page.getByTestId('progress-counts')).toBeVisible();
   }
-  await expect(page.getByTestId('progress-counts')).toContainText('ניסיונות מתועדים: 10');
+  await expect(page.getByTestId('progress-counts')).toContainText('ניסיונות מתועדים: 14');
 });
 
 test('installed PWA launches offline from cache', async ({ page, context }) => {

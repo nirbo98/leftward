@@ -6,11 +6,11 @@ import type { CueEvent, ExerciseId, Observation, TrialParams, TrialRecord, Trial
  * Pure state machine shared by every exercise. No timers decide outcomes:
  * the caregiver advances trials, adds cues and records observations.
  */
-export type RunnerPhase = 'between' | 'stimulus' | 'observing' | 'paused';
+export type RunnerPhase = 'between' | 'pre_target' | 'stimulus' | 'observing' | 'paused';
 
 type UndoEntry =
   | { kind: 'cue' }
-  | { kind: 'record'; spec: TrialSpec; cues: CueEvent[]; startedAt: number; recordId: string };
+  | { kind: 'record'; spec: TrialSpec; cues: CueEvent[]; startedAt: number; shownAt: number | null; recordId: string };
 
 export interface RunnerState {
   sessionId: string;
@@ -21,6 +21,8 @@ export interface RunnerState {
   pausedFrom: Exclude<RunnerPhase, 'paused'> | null;
   trial: TrialSpec | null;
   trialStartedAt: number;
+  /** Set when the target becomes visible in a pre-target-phase exercise. */
+  targetShownAt: number | null;
   cues: CueEvent[];
   completed: TrialRecord[];
   nextIndex: number;
@@ -35,6 +37,7 @@ export type NewCue = Omit<CueEvent, 'id' | 'order' | 'tMs'>;
 export type RunnerAction =
   | { type: 'START_TRIAL'; now: number }
   | { type: 'ADD_CUE'; cue: NewCue; id: string; now: number }
+  | { type: 'REVEAL_TARGET'; now: number }
   | { type: 'OPEN_OBSERVATION' }
   | { type: 'CLOSE_OBSERVATION' }
   | { type: 'RECORD'; observation: Observation; id: string }
@@ -62,6 +65,7 @@ export function initRunner(args: {
     pausedFrom: null,
     trial: null,
     trialStartedAt: 0,
+    targetShownAt: null,
     cues: [],
     completed: [],
     nextIndex: 0,
@@ -92,12 +96,14 @@ export function runnerReducer(state: RunnerState, action: RunnerAction): RunnerS
   switch (action.type) {
     case 'START_TRIAL': {
       if (state.phase === 'paused') return state;
-      const spec = EXERCISES[state.exercise].generate(state.params, state.nextIndex, state.seed);
+      const def = EXERCISES[state.exercise];
+      const spec = def.generate(state.params, state.nextIndex, state.seed);
       return {
         ...s,
-        phase: 'stimulus',
+        phase: def.preTargetPhase ? 'pre_target' : 'stimulus',
         trial: spec,
         trialStartedAt: action.now,
+        targetShownAt: def.preTargetPhase ? null : action.now,
         cues: startCues(state, spec),
         nextIndex: state.nextIndex + 1,
         undo: state.undo.filter((u) => u.kind === 'record'),
@@ -110,9 +116,13 @@ export function runnerReducer(state: RunnerState, action: RunnerAction): RunnerS
         id: action.id,
         order: state.cues.length + 1,
         tMs: Math.max(0, action.now - state.trialStartedAt),
+        ...(state.phase === 'pre_target' ? { preTarget: true } : {}),
       };
       return { ...s, cues: [...state.cues, cue], undo: [...state.undo, { kind: 'cue' }] };
     }
+    case 'REVEAL_TARGET':
+      if (state.phase !== 'pre_target') return state;
+      return { ...s, phase: 'stimulus', targetShownAt: action.now };
     case 'OPEN_OBSERVATION':
       if (!state.trial || state.phase !== 'stimulus') return state;
       return { ...s, phase: 'observing' };
@@ -135,6 +145,9 @@ export function runnerReducer(state: RunnerState, action: RunnerAction): RunnerS
         responseClass: classifyObservation(state.cues, action.observation),
         timing: responseTiming(state.cues, action.observation),
         soundEnabled: state.soundEnabled,
+        ...(EXERCISES[state.exercise].preTargetPhase && state.targetShownAt !== null
+          ? { targetOnsetMs: Math.max(0, state.targetShownAt - state.trialStartedAt) }
+          : {}),
       };
       return {
         ...s,
@@ -142,7 +155,7 @@ export function runnerReducer(state: RunnerState, action: RunnerAction): RunnerS
         completed: [...state.completed, rec],
         undo: [
           ...state.undo.filter((u) => u.kind === 'record'),
-          { kind: 'record', spec: state.trial, cues: state.cues, startedAt: state.trialStartedAt, recordId: rec.id },
+          { kind: 'record', spec: state.trial, cues: state.cues, startedAt: state.trialStartedAt, shownAt: state.targetShownAt, recordId: rec.id },
         ],
         trial: null,
         cues: [],
@@ -165,6 +178,7 @@ export function runnerReducer(state: RunnerState, action: RunnerAction): RunnerS
         trial: last.spec,
         cues: last.cues,
         trialStartedAt: last.startedAt,
+        targetShownAt: last.shownAt,
         completed: state.completed.filter((r) => r.id !== last.recordId),
         undo,
         lastUndoneRecordId: last.recordId,
@@ -180,7 +194,8 @@ export function runnerReducer(state: RunnerState, action: RunnerAction): RunnerS
       if (!state.trial || state.phase === 'paused') return state;
       return {
         ...s,
-        phase: 'stimulus',
+        phase: EXERCISES[state.exercise].preTargetPhase ? 'pre_target' : 'stimulus',
+        targetShownAt: EXERCISES[state.exercise].preTargetPhase ? null : action.now,
         cues: startCues(state, state.trial),
         trialStartedAt: action.now,
         undo: state.undo.filter((u) => u.kind === 'record'),

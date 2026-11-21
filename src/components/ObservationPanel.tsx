@@ -24,7 +24,7 @@ function toOutcome(k: OutcomeKey): ObservationOutcome {
 
 export function cueSummary(cues: readonly CueEvent[]): string {
   if (cues.length === 0) return 'לא ניתן רמז בניסיון הזה.';
-  return 'רמזים שניתנו: ' + cues.map((c) => `${c.order}. ${CUE_LABEL[c.type]} (${CUE_DELIVERY_LABEL[c.delivery]}${c.validity === 'invalid' ? ', בצד הנגדי' : ''})`).join(' · ');
+  return 'רמזים שניתנו: ' + cues.map((c) => `${c.order}. ${CUE_LABEL[c.type]} (${CUE_DELIVERY_LABEL[c.delivery]}${c.validity === 'invalid' ? ', בצד הנגדי' : ''}${c.preTarget ? ', לפני המטרה' : ''})`).join(' · ');
 }
 
 export function ObservationPanel({ trial, cues, onSave, onClose }: {
@@ -69,7 +69,7 @@ export function ObservationPanel({ trial, cues, onSave, onClose }: {
         ))}
       </div>
 
-      {cues.length > 0 && oriented && (
+      {cues.some((c) => !c.preTarget) && oriented && (
         <Toggle
           checked={beforeFirstCue}
           onChange={setBeforeFirstCue}
@@ -127,7 +127,7 @@ export function ObservationPanel({ trial, cues, onSave, onClose }: {
           choice &&
           onSave({
             outcome: toOutcome(choice),
-            caregiverSaysBeforeFirstCue: cues.length > 0 && oriented && beforeFirstCue,
+            caregiverSaysBeforeFirstCue: cues.some((c) => !c.preTarget) && oriented && beforeFirstCue,
             identification: ident,
             flags,
             caregiverMarkedObjectIds: marked,

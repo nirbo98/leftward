@@ -28,15 +28,26 @@ interface Props {
   paused: boolean;
   reducedMotion: boolean;
   photoUrls: Record<string, string>;
-  /** Pursuit duration (ms) for the slow drift from physical right to physical left. */
-  pursuitMs?: number;
+  /** Blank screen before the caregiver reveals the target (alert-then-target). */
+  hideTarget?: boolean;
 }
 
-export function PatientStage({ trial, cues, paused, reducedMotion, photoUrls, pursuitMs = 24000 }: Props) {
+/** Leftward drift with wrap-around over an extended range so large items leave and re-enter smoothly. */
+export function driftX(x0: number, elapsedMs: number, crossSeconds: number): number {
+  const span = 130; // −15% … 115%
+  const travelled = (100 * elapsedMs) / (crossSeconds * 1000);
+  const pos = (((x0 + 15 - travelled) % span) + span) % span;
+  return pos - 15;
+}
+
+export function PatientStage({ trial, cues, paused, reducedMotion, photoUrls, hideTarget = false }: Props) {
   const params = trial?.params;
   const pal = PALETTE[params?.contrast ?? 'high_dark'];
   const size = SIZE_VMIN[params?.size ?? 'huge'];
-  const moving = !!trial && params?.motion === 'slow_pursuit' && !reducedMotion;
+  const motion = params?.motion ?? 'none';
+  const moving = !!trial && motion !== 'none' && !reducedMotion && !hideTarget;
+  const crossSeconds = Math.max(8, params?.crossSeconds ?? 20);
+  const pursuitMs = crossSeconds * 1000 * 0.68; // single target travels from x=84% to x=16%
 
   // Slow pursuit: physical right → physical left; pausing freezes it. Never auto-starts sound.
   const [progress, setProgress] = useState(0);
@@ -52,13 +63,18 @@ export function PatientStage({ trial, cues, paused, reducedMotion, photoUrls, pu
     const tick = (now: number) => {
       elapsed.current += now - last;
       last = now;
+      if (motion === 'leftward_drift') {
+        setProgress(elapsed.current);
+        raf = requestAnimationFrame(tick);
+        return;
+      }
       const p = Math.min(1, elapsed.current / pursuitMs);
       setProgress(p);
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [moving, paused, pursuitMs]);
+  }, [moving, paused, pursuitMs, motion]);
 
   const visualCues = cues.filter((c) => c.type === 'visual' && c.side);
   const latestVisual = visualCues[visualCues.length - 1];
@@ -75,7 +91,7 @@ export function PatientStage({ trial, cues, paused, reducedMotion, photoUrls, pu
       {params?.showLeftAnchor && (
         <div className="left-anchor" data-testid="left-anchor" style={{ left: 0, background: pal.anchor }} />
       )}
-      {latestVisual?.side && (
+      {!hideTarget && latestVisual?.side && (
         <>
           {strong && (
             <div
@@ -101,8 +117,14 @@ export function PatientStage({ trial, cues, paused, reducedMotion, photoUrls, pu
           />
         </>
       )}
-      {trial?.items.map((it) => {
-        const x = it.role === 'target' && moving ? SIDE_X.right + (SIDE_X.left - SIDE_X.right) * progress : it.xPct;
+      {!hideTarget && trial?.items.map((it) => {
+        const x = !moving
+          ? it.xPct
+          : motion === 'leftward_drift'
+            ? driftX(it.xPct, progress, crossSeconds)
+            : it.role === 'target'
+              ? SIDE_X.right + (SIDE_X.left - SIDE_X.right) * progress
+              : it.xPct;
         return (
           <div
             key={it.id}

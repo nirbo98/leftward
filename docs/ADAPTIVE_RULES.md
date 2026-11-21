@@ -17,6 +17,10 @@ Each trial record carries the ordered cue list and the caregiver observation. `c
 
 A visual cue configured to appear at trial start is logged as cue #1, so such trials are never "spontaneous".
 
+**Alert-then-target trials** start in a `pre_target` phase (blank screen). Cues given there carry `preTarget: true`; the target appears only when the caregiver presses הצג מטרה, and `targetOnsetMs` is stored for information. A trial whose only cues were pre-target non-spatial alerts (name, nickname, ״שים לב״, tone) is classed `after_nonspatial_cue`, never `spontaneous`; the "before the first cue" option is hidden because a response cannot precede a target that was not yet shown. The suggested alternation (even-numbered trials with alert) is a display hint only.
+
+**New exercises and the engine:** neither `leftward_pursuit` nor `alert_then_target` is ever proposed by `recommendNextStep` or `recommendStart`; they are chosen manually (בחרו תרגול אחר or advanced mode). Within them, all safety rules (R0–R6, R10) still apply; R8 finds no less-assisted step and holds.
+
 ## Comparability guard
 
 Only the **contiguous run of most recent trials with the same comparability key** is pooled (max 3):

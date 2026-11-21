@@ -24,6 +24,8 @@
 | Some independent leftward exploration | Sparse structured visual scanning (2 objects) | Dense cancellation | R8 (`try_sparse_scanning`), S4 provisional start |
 | Stable sparse scanning | +1 distractor, then sparse cancellation-inspired search | Timed clinical test scoring | R8 (`add_one_distractor`, `try_target_search`) |
 | Comfortable with static changes **and clinician approval** | Static saccadic relocation; optional very slow pursuit | Flashes, fast optokinetic animation | Pursuit gated by settings approval + not reduced-motion |
+| Clinician approved slow motion; tolerates moving displays | Leftward pursuit: 1–3 large objects drifting slowly leftward (SPT-inspired; Kerkhoff 2006/2013) | Fast/full-field optokinetic motion, flashing, use when tired or with reduced motion | `leftward_pursuit` (gated; never auto-suggested) |
+| Alert, orienting seems to improve when "woken up" | Alert-then-target: optional non-spatial alert (name, ״שים לב״, soft tone) before a left target, alternating with no-alert trials (Robertson 1998-inspired) | Treating the alert as a directional cue; fixed rapid timing; claiming the alert "works" from the counts | `alert_then_target`; descriptive comparison in Progress |
 | Basic engagement, can initiate simple response | Very simple focus/initiation | Flanker / Stroop / task switching (not implemented) | `focus_initiation` |
 | Safe ordinary visual task possible | Optional end-of-session transfer prompt (safe visual orienting only) | Mobility, swallowing, arm handling, medical devices | `EndScreen` transfer card |
 | Neutral cues ineffective but personal address seems engaging | Name/nickname cue after explicit opt-in | Assuming the name captures spatial attention or is therapy | `PersonalCueManager` (OFF by default); name-only is classed non-spatial |
@@ -32,4 +34,4 @@
 ## Heuristic vs evidence labels
 
 * **Heuristic (this product):** every threshold (3 comparable observations, 2 cue-dependent observations, distractor caps per size), the cue ladder order, personal-name modes, the transfer prompts, the readiness wording.
-* **Indirect evidence (modality-level, see EVIDENCE_LIMITATIONS.md):** visual scanning/exploration training as a rehabilitation option; individualised, supervised attention practice with adjusted session length and breaks; emphasis on everyday-function observation over task scores.
+* **Indirect evidence (modality-level, see EVIDENCE_LIMITATIONS.md):** visual scanning/exploration training as a rehabilitation option; smooth-pursuit training with leftward-moving displays (small RCTs, Kerkhoff); transient benefit of non-spatial phasic alerting on spatial bias (laboratory, Robertson 1998); individualised, supervised attention practice with adjusted session length and breaks; emphasis on everyday-function observation over task scores.

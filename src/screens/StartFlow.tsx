@@ -12,9 +12,17 @@ import { navigate } from '../state/router';
 
 type Step = 'readiness' | 'rest' | 'vision' | 'vision_followup' | 'suggest' | 'choose' | 'advanced';
 
+/** Motion exercises require clinician approval and are unavailable with reduced motion. */
+export function motionBlockReason(id: ExerciseId, approved: boolean, reducedMotion: boolean): string | null {
+  if (!EXERCISES[id].requiresMotionApproval) return null;
+  if (reducedMotion) return 'לא זמין כי הוגדרה הפחתת תנועה.';
+  if (!approved) return 'זמין רק אחרי אישור צוות השיקום (בהגדרות ← אפשרויות מתקדמות).';
+  return null;
+}
+
 export function StartFlow() {
   const app = useApp();
-  const { settings, sessions, trials, assets } = app;
+  const { settings, sessions, trials, assets, reducedMotion } = app;
   const [step, setStep] = useState<Step>('readiness');
   const [readiness, setReadiness] = useState<Readiness | null>(null);
   const [glasses, setGlasses] = useState<GlassesContext>('not_recorded');
@@ -151,16 +159,20 @@ export function StartFlow() {
           {EXERCISE_ORDER.map((id) => {
             const base = { ...EXERCISES[id].defaults, contrast: settings.contrast };
             const tired = readiness === 'tired';
+            const blocked = motionBlockReason(id, settings.pursuitApprovedByClinician, reducedMotion);
             return (
               <button
                 type="button"
                 key={id}
                 className="card card-button"
                 data-testid={`choose-${id}`}
+                disabled={!!blocked}
+                aria-disabled={!!blocked}
                 onClick={() => void start(id, tired ? { ...base, distractors: 0, size: 'huge' } : { ...base, theme: suggestion?.params.theme ?? 'shapes', photoIds })}
               >
                 <strong>{EXERCISE_NAME[id]}</strong>
                 <span>{EXERCISE_SENTENCE[id]}</span>
+                {blocked && <small className="muted">{blocked}</small>}
               </button>
             );
           })}
@@ -218,7 +230,7 @@ function AdvancedSetup({ initial, onBack, onStart, photoIds }: {
         <legend>תרגול</legend>
         <div className="row wrap">
           {EXERCISE_ORDER.map((id) => (
-            <Choice key={id} selected={exercise === id} data-testid={`adv-ex-${id}`} onClick={() => { setExercise(id); setP({ ...EXERCISES[id].defaults, theme: p.theme, contrast: p.contrast, photoIds }); }}>
+            <Choice key={id} selected={exercise === id} disabled={!!motionBlockReason(id, settings.pursuitApprovedByClinician, reducedMotion)} data-testid={`adv-ex-${id}`} onClick={() => { setExercise(id); setP({ ...EXERCISES[id].defaults, theme: p.theme, contrast: p.contrast, photoIds }); }}>
               {EXERCISE_NAME[id]}
             </Choice>
           ))}
@@ -250,7 +262,7 @@ function AdvancedSetup({ initial, onBack, onStart, photoIds }: {
         <legend>מיקום</legend>
         <div className="row wrap">
           {(['left', 'center', 'right'] as PhysicalSide[]).map((s) => (
-            <Choice key={s} selected={p.targetSide === s} disabled={exercise === 'saccadic_exploration'} onClick={() => set({ targetSide: s })}>
+            <Choice key={s} selected={p.targetSide === s} disabled={exercise === 'saccadic_exploration' || exercise === 'leftward_pursuit'} onClick={() => set({ targetSide: s })}>
               מטרה ב{SIDE_NAME[s]}
             </Choice>
           ))}
@@ -268,7 +280,17 @@ function AdvancedSetup({ initial, onBack, onStart, photoIds }: {
         <Toggle checked={p.startCue === 'visual'} onChange={(v) => set({ startCue: v ? 'visual' : 'none' })} label="רמז חזותי כבר בתחילת כל ניסיון" hint="ניסיונות כאלה לעולם לא ייחשבו כתגובה בלי רמז." />
         <Toggle checked={p.cueSalience === 'soft'} onChange={(v) => set({ cueSalience: v ? 'soft' : 'strong' })} label="רמז חזותי עדין יותר" />
       </fieldset>
-      {def.supportsMotion && (
+      {exercise === 'leftward_pursuit' && (
+        <fieldset className="fieldset">
+          <legend>מהירות התנועה</legend>
+          <div className="row wrap">
+            <Choice selected={p.crossSeconds === 20} onClick={() => set({ crossSeconds: 20 })}>איטית</Choice>
+            <Choice selected={p.crossSeconds === 30} onClick={() => set({ crossSeconds: 30 })}>איטית מאוד</Choice>
+          </div>
+          <small>הזמן שלוקח לחפץ לחצות את המסך: {p.crossSeconds} שניות.</small>
+        </fieldset>
+      )}
+      {exercise === 'saccadic_exploration' && (
         <fieldset className="fieldset">
           <legend>תנועה איטית</legend>
           <Toggle

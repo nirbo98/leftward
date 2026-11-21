@@ -23,6 +23,8 @@ export const EXERCISE_NAME: Record<ExerciseId, string> = {
   target_search: 'חיפוש חפץ אחד',
   saccadic_exploration: 'מעקב אחרי מטרה שעוברת מקום',
   focus_initiation: 'מיקוד ויוזמה',
+  alert_then_target: 'שים לב — ואז מטרה',
+  leftward_pursuit: 'מעקב אחרי חפצים שנעים שמאלה',
 };
 
 export const EXERCISE_SENTENCE: Record<ExerciseId, string> = {
@@ -31,6 +33,8 @@ export const EXERCISE_SENTENCE: Record<ExerciseId, string> = {
   target_search: 'חפץ אחד שונה מופיע בין מעטים אחרים. רואים אם הוא מבחין בו.',
   saccadic_exploration: 'מטרה גדולה עוברת ממקום למקום רק כשלוחצים. בלי מהירות ובלי הבהובים.',
   focus_initiation: 'מטרה אחת ברורה. רואים אם הוא מסתכל עליה בעצמו, או רק אחרי בקשה.',
+  alert_then_target: 'המסך ריק. לפעמים קוראים לו בשם או אומרים ״שים לב״, ומיד אחר כך מציגים חפץ בצד שמאל. לפעמים מציגים בלי לומר דבר.',
+  leftward_pursuit: 'כמה חפצים גדולים נעים לאט מימין לשמאל. מעודדים אותו לעקוב אחריהם בעיניים. רק באישור צוות השיקום.',
 };
 
 export const READINESS_LABEL: Record<Readiness, string> = {
@@ -50,6 +54,7 @@ export const CUE_LABEL: Record<CueType, string> = {
   visual: 'רמז חזותי',
   neutral_tone: 'צליל ניטרלי',
   verbal_left: 'בקשה להביט שמאלה',
+  verbal_alert: 'אמירת ״שים לב״',
   first_name: 'שם פרטי',
   nickname: 'כינוי',
   name_plus_left: 'שם/כינוי עם בקשה להביט שמאלה',

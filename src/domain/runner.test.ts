@@ -67,7 +67,7 @@ describe('runner (shared session/response API)', () => {
   it('every exercise runs a true working loop through the same API (acceptance 9)', () => {
     for (const id of Object.keys(EXERCISES) as ExerciseId[]) {
       let s = start(id);
-      for (let i = 0; i < 4; i++) s = go(s, { type: 'START_TRIAL', now: i }, { type: 'OPEN_OBSERVATION' }, { type: 'RECORD', id: `${id}${i}`, observation: obs(i % 2 ? ORIENT_EYES : NONE) });
+      for (let i = 0; i < 4; i++) s = go(s, { type: 'START_TRIAL', now: i }, { type: 'REVEAL_TARGET', now: i }, { type: 'OPEN_OBSERVATION' }, { type: 'RECORD', id: `${id}${i}`, observation: obs(i % 2 ? ORIENT_EYES : NONE) });
       expect(s.completed).toHaveLength(4);
       expect(s.completed.every((r) => r.exercise === id && r.itemCount >= 1)).toBe(true);
     }
@@ -76,5 +76,40 @@ describe('runner (shared session/response API)', () => {
   it('a session can be finished with only caregiver actions (no patient input exists in the API)', () => {
     const s = go(start(), { type: 'START_TRIAL', now: 0 }, { type: 'OPEN_OBSERVATION' }, { type: 'RECORD', id: 'r', observation: obs({ kind: 'cannot_determine', reason: 'fatigue' }) });
     expect(s.completed[0]!.responseClass).toBe('cannot_determine');
+  });
+});
+
+describe('alert-then-target pre-target phase', () => {
+  it('cues before reveal are flagged preTarget, target onset recorded, observation only after reveal', () => {
+    let s = go(start('alert_then_target'), { type: 'START_TRIAL', now: 1000 });
+    expect(s.phase).toBe('pre_target');
+    s = go(s, { type: 'OPEN_OBSERVATION' });
+    expect(s.phase).toBe('pre_target');
+    s = go(s, { type: 'ADD_CUE', id: 'a', now: 1500, cue: { type: 'first_name', delivery: 'caregiver_spoken', validity: 'not_applicable' } });
+    s = go(s, { type: 'REVEAL_TARGET', now: 2500 });
+    expect(s.phase).toBe('stimulus');
+    s = go(s, { type: 'ADD_CUE', id: 'b', now: 4000, cue: { type: 'visual', delivery: 'on_screen', side: 'left', validity: 'valid' } });
+    s = go(s, { type: 'OPEN_OBSERVATION' }, { type: 'RECORD', id: 'r', observation: obs(ORIENT_EYES) });
+    const r = s.completed[0]!;
+    expect(r.cues.map((c) => [c.type, !!c.preTarget])).toEqual([['first_name', true], ['visual', false]]);
+    expect(r.targetOnsetMs).toBe(1500);
+    expect(r.responseClass).toBe('after_spatial_cue');
+  });
+
+  it('alert-only trial is after a NON-spatial cue, never spontaneous', () => {
+    const s = go(
+      start('alert_then_target'),
+      { type: 'START_TRIAL', now: 0 },
+      { type: 'ADD_CUE', id: 'a', now: 1, cue: { type: 'verbal_alert', delivery: 'caregiver_spoken', validity: 'not_applicable' } },
+      { type: 'REVEAL_TARGET', now: 2 },
+      { type: 'RECORD', id: 'r', observation: obs(ORIENT_EYES) },
+    );
+    expect(s.completed[0]!.responseClass).toBe('after_nonspatial_cue');
+  });
+
+  it('pause during the pre-target phase resumes to it', () => {
+    let s = go(start('alert_then_target'), { type: 'START_TRIAL', now: 0 }, { type: 'PAUSE' });
+    s = go(s, { type: 'RESUME' });
+    expect(s.phase).toBe('pre_target');
   });
 });

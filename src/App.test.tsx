@@ -229,6 +229,54 @@ describe('family flow through the UI', () => {
   });
 });
 
+
+describe('literature-informed exercises in the UI', () => {
+  async function toChooser(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(await screen.findByTestId('home-start'));
+    await user.click(await screen.findByTestId('readiness-alert'));
+    await user.click(await screen.findByTestId('vision-noticed'));
+    await user.click(screen.getByTestId('start-choose-other'));
+  }
+
+  it('leftward pursuit is unavailable until clinician approval is confirmed', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await toChooser(user);
+    expect(screen.getByTestId('choose-leftward_pursuit')).toBeDisabled();
+    expect(screen.getByTestId('choose-leftward_pursuit')).toHaveTextContent('אישור צוות השיקום');
+  });
+
+  it('alert-then-target: blank screen, non-spatial alert logged before reveal, target then physically left', async () => {
+    await db.savePersonal({ ...DEFAULT_PERSONAL, firstName: FAKE_NAME, enabled: true });
+    const user = userEvent.setup();
+    render(<App />);
+    await toChooser(user);
+    await user.click(screen.getByTestId('choose-alert_then_target'));
+    await user.click(await screen.findByTestId('show-target'));
+    expect(screen.queryByTestId('stim-target')).toBeNull(); // blank before reveal
+    expect(screen.getByTestId('alert-planned')).toHaveTextContent('עם התראה');
+    await user.click(screen.getByTestId('alert-name'));
+    await user.click(screen.getByTestId('reveal-target'));
+    expect(screen.getByTestId('stim-target').style.left).toBe('16%');
+    await user.click(screen.getByTestId('record'));
+    expect(screen.queryByTestId('obs-before-first-cue')).toBeNull(); // impossible before the target existed
+    await user.click(screen.getByTestId('obs-eyes'));
+    await user.click(screen.getByTestId('obs-save'));
+    // Trial 2: planned without alert
+    await user.click(screen.getByTestId('show-target'));
+    expect(screen.getByTestId('alert-planned')).toHaveTextContent('בלי התראה');
+    await user.click(screen.getByTestId('reveal-target'));
+    await user.click(screen.getByTestId('record'));
+    await user.click(screen.getByTestId('obs-eyes'));
+    await user.click(screen.getByTestId('obs-save'));
+    await waitFor(async () => expect(await db.listTrials()).toHaveLength(2));
+    const t = await db.listTrials();
+    expect(t[0]!.cues[0]).toMatchObject({ type: 'first_name', delivery: 'caregiver_spoken', preTarget: true });
+    expect(t.map((x) => x.responseClass)).toEqual(['after_nonspatial_cue', 'spontaneous']);
+    expect(audioCtor).not.toHaveBeenCalled();
+  });
+});
+
 describe('no automatic audio', () => {
   it('rendering every screen never constructs an AudioContext', async () => {
     render(<App />);

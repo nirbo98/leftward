@@ -36,7 +36,9 @@ export type ExerciseId =
   | 'visual_scanning'
   | 'target_search'
   | 'saccadic_exploration'
-  | 'focus_initiation';
+  | 'focus_initiation'
+  | 'leftward_pursuit'
+  | 'alert_then_target';
 
 export type StimulusTheme = 'shapes' | 'cars' | 'watches' | 'photos';
 
@@ -51,6 +53,7 @@ export type CueType =
   | 'visual' // on-screen highlight at a side
   | 'neutral_tone' // soft non-spatial tone
   | 'verbal_left' // generic spoken "look left" (no name)
+  | 'verbal_alert' // generic spoken "שים לב" — non-spatial alerting
   | 'first_name'
   | 'nickname'
   | 'name_plus_left' // name/nickname + request to look left
@@ -80,6 +83,8 @@ export interface CueEvent {
   validity: 'valid' | 'invalid' | 'not_applicable';
   /** ms since trial start; informational only, never used to score. */
   tMs: number;
+  /** True if given BEFORE the target was shown (alert-then-target exercise). */
+  preTarget?: boolean;
 }
 
 /** What the caregiver saw. Relative to the target side of the trial. */
@@ -152,7 +157,9 @@ export interface TrialParams {
   distractors: number;
   targetSide: PhysicalSide;
   showLeftAnchor: boolean;
-  motion: 'none' | 'slow_pursuit';
+  motion: 'none' | 'slow_pursuit' | 'leftward_drift';
+  /** Seconds for a stimulus to cross the full screen width when moving (slow by design). */
+  crossSeconds: number;
   /** Visual cue shown automatically at trial start (makes the trial cued from the outset). */
   startCue: 'none' | 'visual';
   /** Salience of the on-screen visual cue. */
@@ -183,6 +190,8 @@ export interface TrialRecord {
   observation: Observation;
   responseClass: ResponseClass;
   timing: ResponseTiming;
+  /** ms from trial start to target reveal (alert-then-target only). Informational. */
+  targetOnsetMs?: number;
   soundEnabled: boolean;
 }
 
@@ -210,6 +219,10 @@ export interface ExerciseDefinition {
   defaults: TrialParams;
   supportsDistractors: boolean;
   supportsMotion: boolean;
+  /** Requires the caregiver-confirmed clinician approval for motion. */
+  requiresMotionApproval: boolean;
+  /** Trials start with a blank screen; target is revealed by the caregiver after an optional alert. */
+  preTargetPhase: boolean;
   /** Generate the stimulus layout for a trial deterministically. */
   generate: (params: TrialParams, index: number, seed: number) => TrialSpec;
 }

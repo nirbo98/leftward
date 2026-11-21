@@ -167,7 +167,7 @@ export function trialsToCsv(sessions: SessionRecord[], trials: TrialRecord[]): s
       EXERCISE_NAME[t.exercise],
       SIDE_NAME[t.targetSide],
       t.itemCount,
-      t.cues.map((c) => `${c.order}. ${CUE_LABEL[c.type]} (${CUE_DELIVERY_LABEL[c.delivery]}${c.validity === 'invalid' ? ', בצד הנגדי' : ''})`).join(' | '),
+      t.cues.map((c) => `${c.order}. ${CUE_LABEL[c.type]} (${CUE_DELIVERY_LABEL[c.delivery]}${c.validity === 'invalid' ? ', בצד הנגדי' : ''}${c.preTarget ? ', לפני הופעת המטרה' : ''})`).join(' | '),
       OUTCOME_HE[o.kind] ?? '',
       o.kind === 'oriented' ? MODALITY_HE[o.modality] : '',
       t.timing === 'no_cues_given' ? 'בלי רמז' : t.timing === 'before_first_cue' ? 'לפני הרמז הראשון (לפי המלווה)' : 'אחרי רמז',

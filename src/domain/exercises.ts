@@ -42,6 +42,7 @@ const BASE: TrialParams = {
   targetSide: 'left',
   showLeftAnchor: false,
   motion: 'none',
+  crossSeconds: 20,
   startCue: 'none',
   cueSalience: 'strong',
   photoIds: [],
@@ -90,6 +91,8 @@ export const EXERCISES: Record<ExerciseId, ExerciseDefinition> = {
     defaults: { ...BASE },
     supportsDistractors: false,
     supportsMotion: false,
+    requiresMotionApproval: false,
+    preTargetPhase: false,
     generate: (p, i, s) => single('guided_orienting', p, i, s, p.targetSide),
   },
   visual_scanning: {
@@ -97,6 +100,8 @@ export const EXERCISES: Record<ExerciseId, ExerciseDefinition> = {
     defaults: { ...BASE, size: 'xlarge', distractors: 1, showLeftAnchor: true },
     supportsDistractors: true,
     supportsMotion: false,
+    requiresMotionApproval: false,
+    preTargetPhase: false,
     generate: (p, i, s) => spread('visual_scanning', p, i, s, false),
   },
   target_search: {
@@ -104,6 +109,8 @@ export const EXERCISES: Record<ExerciseId, ExerciseDefinition> = {
     defaults: { ...BASE, size: 'xlarge', distractors: 2, showLeftAnchor: true },
     supportsDistractors: true,
     supportsMotion: false,
+    requiresMotionApproval: false,
+    preTargetPhase: false,
     generate: (p, i, s) => spread('target_search', p, i, s, true),
   },
   saccadic_exploration: {
@@ -111,6 +118,8 @@ export const EXERCISES: Record<ExerciseId, ExerciseDefinition> = {
     defaults: { ...BASE, size: 'xlarge' },
     supportsDistractors: false,
     supportsMotion: true,
+    requiresMotionApproval: false,
+    preTargetPhase: false,
     generate: (p, i, s) => {
       if (p.motion === 'slow_pursuit') {
         // Starts physically right and drifts slowly to the physical left (animated by the stage).
@@ -126,7 +135,50 @@ export const EXERCISES: Record<ExerciseId, ExerciseDefinition> = {
     defaults: { ...BASE, targetSide: 'center' },
     supportsDistractors: false,
     supportsMotion: false,
+    requiresMotionApproval: false,
+    preTargetPhase: false,
     generate: (p, i, s) => single('focus_initiation', p, i, s, p.targetSide),
+  },
+  /**
+   * Inspired by smooth-pursuit training with leftward-moving displays (Kerkhoff et al. 2006, 2013).
+   * NOT a replication of that protocol: a few large, well-separated stimuli drift slowly leftward
+   * and wrap around. Clinician-approval gated; disabled by reduced motion; pause freezes it.
+   */
+  leftward_pursuit: {
+    id: 'leftward_pursuit',
+    defaults: { ...BASE, size: 'xlarge', distractors: 2, motion: 'leftward_drift', crossSeconds: 20 },
+    supportsDistractors: true,
+    supportsMotion: true,
+    requiresMotionApproval: true,
+    preTargetPhase: false,
+    generate: (p, i, s) => {
+      const rand = mulberry32(s + i * 31337);
+      const n = Math.min(3, clampDistractors(p) + 1);
+      const glyph = glyphFor(p, 'target', rand);
+      const items: StimulusItem[] = Array.from({ length: n }, (_, k) => ({
+        id: (k === 0 ? 't' : 'd') + k,
+        // Evenly spaced across the full cycle so objects never bunch together.
+        xPct: Math.round((100 / n) * k + 100 / (2 * n)),
+        yPct: n === 1 ? 50 : k % 2 === 0 ? 40 : 60,
+        role: k === 0 ? 'target' : 'distractor',
+        glyph,
+      }));
+      return { exercise: 'leftward_pursuit', index: i, seed: s, params: { ...p, motion: 'leftward_drift' }, items, targetSide: 'left' };
+    },
+  },
+  /**
+   * Inspired by phasic-alerting findings (Robertson et al. 1998): a NON-spatial alert (name,
+   * "שים לב", soft tone) given just before the target appears, compared descriptively with
+   * trials without an alert. Timing is controlled by the caregiver — no fixed sub-second SOA.
+   */
+  alert_then_target: {
+    id: 'alert_then_target',
+    defaults: { ...BASE },
+    supportsDistractors: false,
+    supportsMotion: false,
+    requiresMotionApproval: false,
+    preTargetPhase: true,
+    generate: (p, i, s) => single('alert_then_target', p, i, s, p.targetSide),
   },
 };
 
@@ -136,4 +188,11 @@ export const EXERCISE_ORDER: ExerciseId[] = [
   'target_search',
   'saccadic_exploration',
   'focus_initiation',
+  'alert_then_target',
+  'leftward_pursuit',
 ];
+
+/** Alternating with/without-alert schedule (even trials: alert). A suggestion only. */
+export function alertPlanned(index: number): boolean {
+  return index % 2 === 0;
+}

@@ -56,3 +56,25 @@ describe('stimulus generation in PHYSICAL coordinates', () => {
     expect(spec.items[0]!.glyph).toBe('disc');
   });
 });
+
+describe('new literature-informed exercises', () => {
+  it('leftward pursuit: few, evenly spaced large items, destined physically left, clinician-gated', () => {
+    const def = EXERCISES.leftward_pursuit;
+    expect(def.requiresMotionApproval).toBe(true);
+    const spec = def.generate(def.defaults, 0, 5);
+    expect(spec.items).toHaveLength(3);
+    expect(spec.params.motion).toBe('leftward_drift');
+    expect(spec.targetSide).toBe('left');
+    const xs = spec.items.map((i) => i.xPct).sort((a, b) => a - b);
+    expect(xs[1]! - xs[0]!).toBeGreaterThanOrEqual(30);
+    expect(def.generate({ ...def.defaults, distractors: 9 }, 0, 5).items.length).toBeLessThanOrEqual(3);
+  });
+
+  it('alert-then-target: single physically-left target with a pre-target phase', () => {
+    const def = EXERCISES.alert_then_target;
+    expect(def.preTargetPhase).toBe(true);
+    const spec = def.generate(def.defaults, 0, 1);
+    expect(spec.items).toHaveLength(1);
+    expect(spec.items[0]!.xPct).toBe(SIDE_X.left);
+  });
+});

@@ -144,7 +144,7 @@ export function AdvancedSettings() {
       <Toggle
         checked={settings.pursuitApprovedByClinician}
         onChange={(v) => void updateSettings({ pursuitApprovedByClinician: v })}
-        label="צוות השיקום אישר תרגול עם מטרה שנעה לאט"
+        label="צוות השיקום אישר תרגול עם חפצים שנעים לאט"
         hint="רק לאחר אישור. אין תנועה מהירה או הבהובים."
       />
       <Toggle

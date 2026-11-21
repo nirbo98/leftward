@@ -108,6 +108,18 @@ export function ProgressScreen() {
             </ul>
           </details>
 
+          {(s.alertComparison.withAlert.trials > 0 || s.alertComparison.withoutAlert.trials > 0) && (
+            <details className="card" data-testid="alert-compare">
+              <summary>״שים לב — ואז מטרה״: עם התראה ובלי התראה</summary>
+              <Notice kind="warn">
+                זו ספירה תיאורית בלבד. במחקר נמצא שהתראה לא־כיוונית יכולה לשפר זמנית את ההתייחסות לצד שמאל, אבל כאן אין ניסוי מבוקר, הניסיונות מעטים, ואי אפשר להסיק מזה שההתראה עוזרת לו.
+              </Notice>
+              <Bar k={s.alertComparison.withAlert.oriented} n={s.alertComparison.withAlert.interpretable} label="הפניה למטרה — עם התראה" />
+              <Bar k={s.alertComparison.withoutAlert.oriented} n={s.alertComparison.withoutAlert.interpretable} label="הפניה למטרה — בלי התראה" />
+              {s.alertComparison.excludedMixed > 0 && <p className="muted small">ניסיונות שבהם ניתן גם רמז אחרי הופעת המטרה לא נכללו: {s.alertComparison.excludedMixed}</p>}
+            </details>
+          )}
+
           <details className="card" data-testid="cue-compare">
             <summary>השוואה תיאורית בין סוגי רמזים</summary>
             <Notice kind="warn">

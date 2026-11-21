@@ -156,3 +156,4 @@ details.section[open] > summary::before { transform: rotate(-90deg); }
 @media print {
   .btn, .file-btn { display: none; }
 }
+.planned { background: #2a3a56; color: #fff; padding: .4rem .8rem; border-radius: 10px; font-weight: 600; }

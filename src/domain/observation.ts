@@ -15,6 +15,7 @@ export function cueSpatiality(type: CueType): CueSpatiality {
     case 'name_plus_left':
       return 'spatial';
     case 'neutral_tone':
+    case 'verbal_alert':
     case 'first_name':
     case 'nickname':
       return 'nonspatial';

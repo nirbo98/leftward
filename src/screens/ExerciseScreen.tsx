@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { applyChange, recommendNextStep, type Recommendation, type RecommendationKind } from '../domain/adaptive';
-import { EXERCISES } from '../domain/exercises';
+import { alertPlanned, EXERCISES } from '../domain/exercises';
 import type { NewCue } from '../domain/runner';
 import { newId } from '../domain/rng';
 import type { CueType, TrialParams } from '../domain/types';
-import { CuePanel, hasAnyName } from '../components/CuePanel';
+import { CuePanel, hasAnyName, personalText } from '../components/CuePanel';
 import { ObservationPanel } from '../components/ObservationPanel';
 import { PatientStage } from '../components/PatientStage';
 import { Btn, Notice } from '../components/ui';
-import { stopAll } from '../services/audio';
+import { playBlob, playTone, stopAll } from '../services/audio';
+import { speakPersonal } from '../services/tts';
 import { EXERCISE_NAME, EXERCISE_SENTENCE, ofN } from '../i18n/he';
 import { useApp } from '../state/AppState';
 import { navigate } from '../state/router';
@@ -126,12 +127,13 @@ export function ExerciseScreen() {
   const phase = runner.phase;
   const trial = runner.trial;
   const done = runner.completed;
-  const motionBlocked = runner.params.motion === 'slow_pursuit' && reducedMotion;
+  const motionBlocked = runner.params.motion !== 'none' && reducedMotion;
+  const preTarget = EXERCISES[runner.exercise].preTargetPhase;
 
   return (
     <div className="exercise" data-phase={phase} data-sugg={suggestion?.ruleId ?? "none"} data-n={done.length}>
       <div className="stage-wrap">
-        <PatientStage trial={trial} cues={runner.cues} paused={phase === 'paused'} reducedMotion={reducedMotion} photoUrls={photoUrls} />
+        <PatientStage trial={trial} cues={runner.cues} paused={phase === 'paused'} reducedMotion={reducedMotion} photoUrls={photoUrls} hideTarget={phase === 'pre_target' || (phase === 'paused' && runner.pausedFrom === 'pre_target')} />
         {phase === 'paused' && (
           <div className="pause-overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title" data-testid="pause-overlay">
             <h2 id="pause-title">הפסקה</h2>
@@ -171,8 +173,17 @@ export function ExerciseScreen() {
           <div className="bar-main">
             {phase === 'between' && (
               <Btn variant="primary" big onClick={() => { setSuggestion(null); dispatch({ type: 'START_TRIAL', now: Date.now() }); }} data-testid="show-target">
-                {done.length === 0 ? 'הצג מטרה' : 'ניסיון הבא'}
+                {preTarget ? 'ניסיון חדש (מסך ריק)' : done.length === 0 ? 'הצג מטרה' : 'ניסיון הבא'}
               </Btn>
+            )}
+            {phase === 'pre_target' && trial && (
+              <AlertControls
+                planned={alertPlanned(trial.index)}
+                alertsGiven={runner.cues.length}
+                onCue={addCue}
+                onReveal={() => dispatch({ type: 'REVEAL_TARGET', now: Date.now() })}
+                setToast={setToast}
+              />
             )}
             {(phase === 'stimulus' || phase === 'observing') && (
               <>
@@ -223,9 +234,74 @@ export function ExerciseScreen() {
             <li>אם הוא עייף או לא נוח לו — ״הפסקה״ או ״סיום״. אין צורך להשלים מספר ניסיונות.</li>
           </ol>
           <p className="muted">היישום לא רואה את העיניים שלו. רק אתם רואים. ״לא ראיתי תגובה״ לא אומר שהוא לא רואה.</p>
-          {EXERCISES[runner.exercise].supportsMotion && <p className="muted">במטרה שעוברת מקום: כל ״ניסיון הבא״ מעביר את המטרה למקום חדש.</p>}
+          {runner.exercise === 'saccadic_exploration' && <p className="muted">במטרה שעוברת מקום: כל ״ניסיון הבא״ מעביר את המטרה למקום חדש.</p>}
+          {runner.exercise === 'leftward_pursuit' && <p className="muted">החפצים נעים לאט שמאלה. אחרי כחצי דקה של מעקב, תעדו אם נראה שעקב אחריהם בעיניים או בראש. ״הפסקה״ עוצרת את התנועה מיד.</p>}
+          {runner.exercise === 'alert_then_target' && <p className="muted">המסך ריק. אם מוצע ״עם התראה״ — קראו לו בשם או אמרו ״שים לב״, לחצו על הכפתור המתאים, ומיד ״הצג מטרה עכשיו״. אם מוצע ״בלי התראה״ — פשוט הציגו. ההשוואה בין שני סוגי הניסיונות היא רק תיאור, לא מבחן.</p>}
         </section>
       )}
     </div>
+  );
+}
+
+/** Pre-target alert controls (phasic-alerting-inspired exercise). Non-spatial alerts only. */
+function AlertControls({ planned, alertsGiven, onCue, onReveal, setToast }: {
+  planned: boolean;
+  alertsGiven: number;
+  onCue: (c: NewCue) => void;
+  onReveal: () => void;
+  setToast: (t: string) => void;
+}) {
+  const { personal, settings, assets } = useApp();
+  const named = personal.enabled && personal.modes.caregiverSpoken && hasAnyName(personal);
+  const nameType: CueType = personal.preferredAddress === 'nickname' && personal.nicknames[0] ? 'nickname' : personal.firstName ? 'first_name' : 'nickname';
+  const ttsReady = personal.enabled && personal.modes.localTts && personal.tts.verifiedOffline && settings.sound.enabled;
+  const clip = personal.enabled && personal.modes.importedAudio && settings.sound.enabled
+    ? assets.find((a) => a.kind === 'audio' && (a.mappedCue === 'first_name' || a.mappedCue === 'nickname'))
+    : undefined;
+  return (
+    <>
+      <span className="planned" data-testid="alert-planned">{planned ? 'מוצע בניסיון הזה: עם התראה' : 'מוצע בניסיון הזה: בלי התראה'}</span>
+      {named && (
+        <Btn onClick={() => onCue({ type: nameType, delivery: 'caregiver_spoken', validity: 'not_applicable' })} data-testid="alert-name">אמרתי את שמו</Btn>
+      )}
+      <Btn onClick={() => onCue({ type: 'verbal_alert', delivery: 'caregiver_spoken', validity: 'not_applicable' })} data-testid="alert-verbal">אמרתי ״שים לב״</Btn>
+      {settings.sound.enabled && (
+        <Btn
+          data-testid="alert-tone"
+          onClick={async () => {
+            if (await playTone({ volume: settings.sound.volume })) onCue({ type: 'neutral_tone', delivery: 'device_tone', validity: 'not_applicable' });
+            else setToast('לא ניתן היה להשמיע צליל. ההתראה לא נרשמה.');
+          }}
+        >
+          צליל קצר
+        </Btn>
+      )}
+      {ttsReady && personalText(personal, nameType) && (
+        <Btn
+          data-testid="alert-tts"
+          onClick={async () => {
+            const ok = await speakPersonal({ text: personalText(personal, nameType), voiceURI: personal.tts.voiceURI, verifiedOffline: personal.tts.verifiedOffline, optedIn: true, volume: settings.sound.volume });
+            if (ok) onCue({ type: nameType, delivery: 'local_tts', validity: 'not_applicable' });
+            else setToast('ההקראה לא זמינה. אפשר לומר את השם בקול.');
+          }}
+        >
+          הקראת השם
+        </Btn>
+      )}
+      {clip && (
+        <Btn
+          data-testid="alert-clip"
+          onClick={async () => {
+            if (await playBlob(clip.blob, settings.sound.volume)) onCue({ type: clip.mappedCue === 'nickname' ? 'nickname' : 'first_name', delivery: 'imported_audio', validity: 'not_applicable' });
+            else setToast('לא ניתן היה להשמיע את הקובץ.');
+          }}
+        >
+          השמעת קובץ
+        </Btn>
+      )}
+      <Btn variant="primary" big onClick={onReveal} data-testid="reveal-target">
+        {alertsGiven > 0 ? 'הצג מטרה עכשיו' : 'הצג מטרה (בלי התראה)'}
+      </Btn>
+    </>
   );
 }
