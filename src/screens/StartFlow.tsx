@@ -4,6 +4,7 @@ import { EXERCISES, EXERCISE_ORDER, MAX_DISTRACTORS } from '../domain/exercises'
 import type { ExerciseId, GlassesContext, PhysicalSide, Readiness, StimulusSize, StimulusTheme, TrialParams, VisionContext, VisionPreviewResponse } from '../domain/types';
 import { SIZE_ORDER } from '../domain/types';
 import { Glyph } from '../components/Glyph';
+import { ExerciseInfoToggle } from '../components/ExerciseInfo';
 import { PALETTE } from '../components/PatientStage';
 import { Btn, Choice, Notice, Page, Toggle } from '../components/ui';
 import { ACUTE_CHANGE_NOTE, EXERCISE_NAME, EXERCISE_SENTENCE, READINESS_LABEL, SIDE_NAME, SIZE_LABEL, THEME_LABEL, VISION_LABEL } from '../i18n/he';
@@ -161,19 +162,21 @@ export function StartFlow() {
             const tired = readiness === 'tired';
             const blocked = motionBlockReason(id, settings.pursuitApprovedByClinician, reducedMotion);
             return (
-              <button
-                type="button"
-                key={id}
-                className="card card-button"
-                data-testid={`choose-${id}`}
-                disabled={!!blocked}
-                aria-disabled={!!blocked}
-                onClick={() => void start(id, tired ? { ...base, distractors: 0, size: 'huge' } : { ...base, theme: suggestion?.params.theme ?? 'shapes', photoIds })}
-              >
-                <strong>{EXERCISE_NAME[id]}</strong>
-                <span>{EXERCISE_SENTENCE[id]}</span>
-                {blocked && <small className="muted">{blocked}</small>}
-              </button>
+              <div key={id} className="card choose-card">
+                <button
+                  type="button"
+                  className="card-button plain"
+                  data-testid={`choose-${id}`}
+                  disabled={!!blocked}
+                  aria-disabled={!!blocked}
+                  onClick={() => void start(id, tired ? { ...base, distractors: 0, size: 'huge' } : { ...base, theme: suggestion?.params.theme ?? 'shapes', photoIds })}
+                >
+                  <strong>{EXERCISE_NAME[id]}</strong>
+                  <span>{EXERCISE_SENTENCE[id]}</span>
+                  {blocked && <small className="muted">{blocked}</small>}
+                </button>
+                <ExerciseInfoToggle id={id} />
+              </div>
             );
           })}
         </div>
@@ -193,6 +196,7 @@ export function StartFlow() {
         <section className="card" aria-live="polite">
           <p className="lead" data-testid="start-sentence">{suggestion.sentenceHe}</p>
           {suggestion.provisionalFromHistory && <p className="muted">זו הצעה זמנית לפי מפגש קודם. מה שקובע הוא איך הוא היום.</p>}
+          <ExerciseInfoToggle id={suggestion.exercise} />
           <Btn variant="primary" big data-testid="start-adapted" onClick={() => void start(suggestion.exercise, suggestion.params)}>
             התחל תרגול מותאם
           </Btn>
@@ -236,6 +240,7 @@ function AdvancedSetup({ initial, onBack, onStart, photoIds }: {
           ))}
         </div>
         <small>{EXERCISE_SENTENCE[exercise]}</small>
+        <ExerciseInfoToggle id={exercise} />
       </fieldset>
       <fieldset className="fieldset">
         <legend>סוג המטרות</legend>

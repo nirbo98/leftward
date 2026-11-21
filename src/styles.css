@@ -157,3 +157,11 @@ details.section[open] > summary::before { transform: rotate(-90deg); }
   .btn, .file-btn { display: none; }
 }
 .planned { background: #2a3a56; color: #fff; padding: .4rem .8rem; border-radius: 10px; font-weight: 600; }
+.choose-card { display: flex; flex-direction: column; gap: .4rem; }
+.card-button.plain { background: none; border: none; padding: 0; width: 100%; }
+.card-button.plain:disabled { opacity: .55; cursor: not-allowed; }
+.info-toggle > summary { color: var(--primary); text-decoration: underline; min-height: 44px; }
+.exercise-info { margin: .4rem 0; display: grid; gap: .5rem; }
+.exercise-info-row dt { font-weight: 700; }
+.exercise-info-row dd { margin: .1rem 0 0; }
+.sheet .exercise-info-row dd { max-width: 70ch; }

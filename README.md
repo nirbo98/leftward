@@ -10,6 +10,7 @@ The whole end-user interface is **Hebrew (RTL)**. Developer code and these engin
 
 | Area | Summary |
 |---|---|
+| Explanations | Every exercise has an in-app "על התרגול" card (why · when it fits · how · when not), in the chooser, the start screen and the help panel; the same text is in [docs/EXERCISES_HE.md](docs/EXERCISES_HE.md). |
 | Family flow | Home with three buttons (התחל תרגול · התקדמות · הגדרות ועזרה) → readiness check (ערני ומגיב / עייף אבל מגיב / לא מתאים עכשיו) → optional visibility preview → one adapted exercise explained in one Hebrew sentence. |
 | Exercises | Guided left orienting (Posner-inspired, not a Posner task), structured visual scanning, cancellation-inspired target search, static saccadic relocation + optional very slow pursuit, simple focus & initiation, **alert-then-target** (phasic-alerting-inspired, Robertson 1998), **leftward pursuit** (SPT-inspired, Kerkhoff 2006/2013; clinician-approval gate), end-of-session real-world transfer prompt. All use one shared runner and one observation interface. |
 | Observations | Caregiver records what was seen: eyes / head / both / unclear / no response / other direction / tired-cannot tell — plus optional "seemed to identify", flags (fatigue, discomfort, visibility, engagement) and manual object marks. Cue order and delivery mode are logged; any response after a cue is never "spontaneous". |
@@ -34,6 +35,7 @@ npm run e2e          # Playwright browser tests (needs a Chrome/Chromium; see be
 | `npm run typecheck` | Strict TypeScript |
 | `npm test` | Vitest unit + UI integration tests (jsdom + fake IndexedDB) |
 | `npm run build` | Production build to `dist/` incl. generated offline service worker and CSP |
+| `npm run docs:exercises` | Regenerates docs/EXERCISES_HE.md from the in-app exercise explanations |
 | `npm run privacy-audit` | Repository + bundle privacy checks (see [docs/PRIVACY_SECURITY.md](docs/PRIVACY_SECURITY.md)) |
 | `npm run e2e` | Playwright: Mac desktop, iPad landscape, iPad portrait viewports; `PW_WEBKIT=1` adds a WebKit iPad project |
 

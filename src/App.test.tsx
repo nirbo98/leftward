@@ -238,6 +238,17 @@ describe('literature-informed exercises in the UI', () => {
     await user.click(screen.getByTestId('start-choose-other'));
   }
 
+  it('every exercise in the chooser has an "על התרגול" explanation', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await toChooser(user);
+    const toggle = screen.getByTestId('info-toggle-visual_scanning');
+    await user.click(within(toggle).getByText('על התרגול'));
+    const info = screen.getByTestId('exercise-info-visual_scanning');
+    for (const label of ['למה', 'מתי מתאים', 'איך עושים', 'מתי לא']) expect(within(info).getByText(label)).toBeInTheDocument();
+    expect(screen.getAllByText('על התרגול')).toHaveLength(7);
+  });
+
   it('leftward pursuit is unavailable until clinician approval is confirmed', async () => {
     const user = userEvent.setup();
     render(<App />);

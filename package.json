@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "privacy-audit": "node scripts/privacy-audit.mjs",
-    "verify": "npm run lint && npm run typecheck && npm run test && npm run build && npm run privacy-audit"
+    "verify": "npm run lint && npm run typecheck && npm run test && npm run build && npm run privacy-audit",
+    "docs:exercises": "node scripts/gen-exercise-guide.mjs"
   },
   "dependencies": {
     "idb": "^8.0.4",

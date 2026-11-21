@@ -14,6 +14,7 @@
     "exactOptionalPropertyTypes": false,
     "skipLibCheck": true,
     "isolatedModules": true,
+    "resolveJsonModule": true,
     "moduleDetection": "force",
     "noEmit": true,
     "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom", "node"]

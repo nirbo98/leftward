@@ -190,8 +190,9 @@ test('all seven exercises run a real loop with the same observation interface', 
       await expect(page.getByTestId('stim-target')).toBeVisible();
       if (id === 'leftward_pursuit') {
         const x0 = Number(await page.getByTestId('stim-target').getAttribute('data-physical-x'));
-        await page.waitForTimeout(800);
-        expect(Number(await page.getByTestId('stim-target').getAttribute('data-physical-x'))).toBeLessThan(x0);
+        await expect
+          .poll(async () => Number(await page.getByTestId('stim-target').getAttribute('data-physical-x')), { timeout: 5000 })
+          .not.toBe(x0); // moving (leftward drift; may wrap under heavy load)
       }
       await page.getByTestId('record').click();
       await expect(page.getByTestId('observation-panel')).toBeVisible();

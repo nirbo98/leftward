@@ -7,10 +7,11 @@ import type { CueType, TrialParams } from '../domain/types';
 import { CuePanel, hasAnyName, personalText } from '../components/CuePanel';
 import { ObservationPanel } from '../components/ObservationPanel';
 import { PatientStage } from '../components/PatientStage';
+import { ExerciseInfo } from '../components/ExerciseInfo';
 import { Btn, Notice } from '../components/ui';
 import { playBlob, playTone, stopAll } from '../services/audio';
 import { speakPersonal } from '../services/tts';
-import { EXERCISE_NAME, EXERCISE_SENTENCE, ofN } from '../i18n/he';
+import { EXERCISE_NAME, ofN } from '../i18n/he';
 import { useApp } from '../state/AppState';
 import { navigate } from '../state/router';
 
@@ -226,17 +227,16 @@ export function ExerciseScreen() {
             <h2 id="help-title">איך מתרגלים</h2>
             <Btn variant="quiet" onClick={() => setPanel('none')}>סגירה</Btn>
           </div>
-          <p><strong>{EXERCISE_NAME[runner.exercise]}:</strong> {EXERCISE_SENTENCE[runner.exercise]}</p>
+          <h3>{EXERCISE_NAME[runner.exercise]}</h3>
+          <ExerciseInfo id={runner.exercise} />
+          <h3>בכל תרגול</h3>
           <ol>
-            <li>לחצו ״הצג מטרה״. חכו כמה שניות בשקט.</li>
-            <li>אם הוא לא מסתכל לבד — אפשר ״עזרה נוספת״: קודם רמז על המסך, אחר כך בקשה בקול.</li>
-            <li>לחצו ״תיעוד מה ראיתי״ ובחרו מה באמת קרה: עיניים, ראש, שניהם, לא ברור, או שלא ראיתם תגובה.</li>
-            <li>אם הוא עייף או לא נוח לו — ״הפסקה״ או ״סיום״. אין צורך להשלים מספר ניסיונות.</li>
+            <li>חכו כמה שניות בשקט אחרי שהמטרה מופיעה. לא ממהרים.</li>
+            <li>״עזרה נוספת״ נותנת עזרה צעד אחד בכל פעם, וכל צעד נרשם.</li>
+            <li>״תיעוד מה ראיתי״: בחרו מה באמת קרה, ולא מה שהייתם רוצים שיקרה.</li>
+            <li>״הפסקה״ ו״סיום״ תמיד זמינים. אין מספר ניסיונות שחייבים להשלים.</li>
           </ol>
           <p className="muted">היישום לא רואה את העיניים שלו. רק אתם רואים. ״לא ראיתי תגובה״ לא אומר שהוא לא רואה.</p>
-          {runner.exercise === 'saccadic_exploration' && <p className="muted">במטרה שעוברת מקום: כל ״ניסיון הבא״ מעביר את המטרה למקום חדש.</p>}
-          {runner.exercise === 'leftward_pursuit' && <p className="muted">החפצים נעים לאט שמאלה. אחרי כחצי דקה של מעקב, תעדו אם נראה שעקב אחריהם בעיניים או בראש. ״הפסקה״ עוצרת את התנועה מיד.</p>}
-          {runner.exercise === 'alert_then_target' && <p className="muted">המסך ריק. אם מוצע ״עם התראה״ — קראו לו בשם או אמרו ״שים לב״, לחצו על הכפתור המתאים, ומיד ״הצג מטרה עכשיו״. אם מוצע ״בלי התראה״ — פשוט הציגו. ההשוואה בין שני סוגי הניסיונות היא רק תיאור, לא מבחן.</p>}
         </section>
       )}
     </div>
