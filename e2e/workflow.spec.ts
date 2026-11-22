@@ -170,6 +170,7 @@ test('slow pursuit moves only with approval, freezes on pause, and is disabled b
 });
 
 test('all seven exercises run a real loop with the same observation interface', async ({ page }) => {
+  test.setTimeout(180_000); // 14 recorded trials; CI runners are slower
   await page.goto('/#/settings');
   await page.getByTestId('section-advanced').locator('summary').click();
   await page.getByText('צוות השיקום אישר תרגול עם חפצים שנעים לאט').click();

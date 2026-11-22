@@ -8,6 +8,7 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 60_000,
   retries: 0,
+  workers: process.env.CI ? 2 : undefined,
   use: { baseURL: 'http://127.0.0.1:4173', locale: 'he-IL', trace: 'off' },
   webServer: { command: 'npx vite preview --port 4173 --strictPort --host 127.0.0.1', url: 'http://127.0.0.1:4173', reuseExistingServer: true, timeout: 60_000 },
   projects: [
