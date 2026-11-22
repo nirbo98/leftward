@@ -174,12 +174,16 @@ test('all seven exercises run a real loop with the same observation interface', 
   await page.goto('/#/settings');
   await page.getByTestId('section-advanced').locator('summary').click();
   await page.getByText('צוות השיקום אישר תרגול עם חפצים שנעים לאט').click();
-  await page.goto('/');
+  await expect(page.getByRole('checkbox', { name: /צוות השיקום אישר/ })).toBeChecked();
+  // Same-document hash navigation: never reload while the IndexedDB write may be in flight.
+  await page.goto('/#/');
+  await expect(page.getByTestId('home-start')).toBeVisible();
   for (const id of ['guided_orienting', 'visual_scanning', 'target_search', 'saccadic_exploration', 'focus_initiation', 'alert_then_target', 'leftward_pursuit']) {
     await page.goto('/#/start');
     await page.getByTestId('readiness-alert').click();
     await page.getByTestId('vision-skipped').click();
     await page.getByTestId('start-choose-other').click();
+    await expect(page.getByTestId(`choose-${id}`)).toBeEnabled({ timeout: 10_000 });
     await page.getByTestId(`choose-${id}`).click();
     for (let i = 0; i < 2; i++) {
       await page.getByTestId('show-target').click();
